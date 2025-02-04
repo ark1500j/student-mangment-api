@@ -1,0 +1,13 @@
+global:
+  scrape_interval: 5s  # Frequency of scraping
+
+scrape_configs:
+  - job_name: 'node-metrics'  # This scrapes your Express app
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['api:9100']  # Ensure this matches your service name in Docker
+
+  - job_name: 'mongodb'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['mongodb-exporter:9216']

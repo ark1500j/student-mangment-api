@@ -3,21 +3,21 @@ import dotenv from "dotenv";
 import logger from "./utils/logger";
 import connectDB, { createInstructor } from "./config/db";
 import createServer from "./config/server";
+import startMetricsServer from "./utils/metrics";
 
 dotenv.config();
-
 
 const app: Application = createServer();
 // Start server
 (async () => {
   try {
     await connectDB(); // connecting to mongodb
-   await createInstructor();
+    await createInstructor();
+    startMetricsServer();
     app.listen(3000, () => {
       logger.info("Server started on port 3000");
     });
   } catch (error) {
     logger.error("Error starting the server:", error);
-    
   }
 })();

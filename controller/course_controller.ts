@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import Course from "../models/Course";
 import logger from "../utils/logger";
+import { databaseResponseTimeHistogram } from "../utils/metrics";
 export async function getCourses(req: Request, res: Response) {
   try {
     const { department, semester } = req.query; // Get filters from query params
@@ -20,8 +21,14 @@ export async function getCourses(req: Request, res: Response) {
     logger.info("Attempting to retrieve courses with filter:", filter);
 
     // Find courses with the given filter
+    const timer = databaseResponseTimeHistogram.startTimer();
     const courses = await Course.find(query);
-    if (courses.length===0) {
+    timer({
+      operation: "get all courses",
+      collection: "courses",
+      success: 1,
+    });
+    if (courses.length === 0) {
       // Check if courses array is empty
       logger.warn("No courses found");
       res.status(404).json({

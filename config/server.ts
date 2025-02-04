@@ -1,4 +1,4 @@
-import express, { Application } from "express";
+import express, { Application, Request, Response } from "express";
 import dotenv from "dotenv";
 import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
@@ -10,12 +10,29 @@ import authRoute from "../routes/index";
 import swaggerDocument from "../swagger-output.json"; // Use the path relative to the current file
 import logger from "../utils/logger";
 import { authLimiter, limiter } from "../middleware/limiter/limiter";
+import responseTime from "response-time";
+import { restResponseTimeHistogram } from "../utils/metrics";
 
 export default function createServer() {
   dotenv.config();
   const app: Application = express();
 
   // Middleware
+
+  app.use(
+    responseTime((req: Request, res: Response, time: number) => {
+      if (req?.route?.path) {
+        restResponseTimeHistogram.observe(
+          {
+            method: req.method,
+            route: req.baseUrl,
+            status_code: res.statusCode,
+          },
+          time
+        );
+      }
+    })
+  );
   app.use(express.json());
 
   const morganFormat = ":method :url :status :response-time ms";
@@ -46,6 +63,6 @@ export default function createServer() {
   app.use("/api/courses", courseRoute);
   app.use("/api/enrollments", enrollmentRoute);
   app.use("/api/sort", sortRoute);
-  
+
   return app;
 }

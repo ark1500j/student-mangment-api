@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
     ports: 
       - 3000:3000
+      - 9100:9100
     env_file:
       - .env        #for env file if not set in the environment
     environment:
@@ -45,6 +46,50 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: secret
     volumes:
       - db_data:/data/db
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - "9090:9090"
+    depends_on:
+      - api
+      - mongodb-exporter
+  # node-exporter:
+  #   image: prom/node-exporter:latest
+  #   container_name: node-exporter
+  #   restart: unless-stopped
+  #   volumes:
+  #     - /proc:/host/proc:ro
+  #     - /sys:/host/sys:ro
+  #     - /:/rootfs:ro
+  #   command:
+  #     - '--path.procfs=/host/proc'
+  #     - '--path.rootfs=/rootfs'
+  #     - '--path.sysfs=/host/sys'
+  #     - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+  #   ports:
+  #     - "9100:9100"
+
+  mongodb-exporter:
+    image: bitnami/mongodb-exporter:latest
+    environment:
+      MONGODB_URI: "mongodb://root:secret@db:27017/schoolDB?authSource=admin"
+    ports:
+      - "9216:9216"
+    depends_on:
+      - db
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin  # Set admin password
   redis:
     image: redis:alpine
     restart: always
